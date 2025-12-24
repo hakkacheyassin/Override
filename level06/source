@@ -1,0 +1,67 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/ptrace.h>
+#include <unistd.h>
+int auth(char *login, unsigned int serial) {
+    int result;
+    int i;
+    int len;
+    
+    login[strcspn(login, "\n")] = 0;
+    
+    len = strnlen(login, 32);
+    
+    if (len <= 5) {
+        return 1;
+    }
+    
+    if (ptrace(0, 0, 1, 0) == -1) {
+        puts("\033[32m.----------------------------------------------------.");
+        puts("\033[31m| !! TAMPERING DETECTED !!  (anti-debugging active)  |");
+        puts("\033[32m'----------------------------------------------------'");
+        return 1;
+    }
+    
+    result = (login[3] ^ 0x1337) + 0x5eeded;
+    
+    for (i = 0; i < len; i++) {
+        if (login[i] <= 31) {
+            return 1;
+        }
+        
+        result += (login[i] ^ result) % 0x539;
+    }
+    
+    if (serial == result) {
+        return 0;
+    } else {
+        return 1;
+    }
+}
+int main(int argc, char **argv) {
+    char login[32];
+    unsigned int serial;
+    
+    puts("***********************************");
+    puts("*\t\tlevel06\t\t  *");
+    puts("***********************************");
+    
+    printf("-> Enter Login: ");
+    fgets(login, sizeof(login), stdin);
+    
+    puts("***********************************");
+    puts("***** NEW ACCOUNT DETECTED *******");
+    puts("***********************************");
+    
+    printf("-> Enter Serial: ");
+    scanf("%u", &serial);
+    
+    if (auth(login, serial) == 0) {
+        puts("Authenticated!");
+        system("/bin/sh");
+        return 0;
+    } else {
+        return 1;
+    }
+}

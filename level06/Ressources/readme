@@ -1,0 +1,34 @@
+Level06 - Hash Collision
+Vulnerability
+// Anti-debug with ptrace
+if (ptrace(0, 0, 1, 0) == -1) return 1;
+
+// Custom hash validation
+result = (login[3] ^ 0x1337) + 0x5eeded;
+for (i = 0; i < len; i++) {
+    result += (login[i] ^ result) % 0x539;
+}
+if (serial == result) system("/bin/sh");
+
+Solution: GDB Bypass
+
+bashgdb level06
+(gdb) b *0x080487b5    # Before ptrace
+(gdb) b *0x08048866    # After hash loop
+(gdb) r
+Login: bonjour
+Serial: 0
+
+# Bypass ptrace
+(gdb) jump *0x080487ed
+
+# Extract hash
+(gdb) p (int)($ebp-0x10)
+$1 = 6239796
+Execute
+bash./level06
+Login: bonjour
+Serial: 6239796
+cat /home/users/level07/.pass
+Flag
+GbcPDRgsFK77LNnnuh7QyFYA2942Gp8yKj9KrWD8

@@ -1,0 +1,72 @@
+int32_t clear_stdin(void) { 
+ char i = 0; 
+do { i = getchar(); 
+if (i == '\n') { 
+ break; } }
+ while (i != 0xFF); 
+return i; 
+}
+uint32_t get_unum(void) {
+	 uint32_t result = 0; 
+	 fflush(stdout); 
+	 scanf("%u", &result); 
+	 clear_stdin(); 
+ }
+
+ void prog_timeout(void) {
+ exit(1); 
+}
+
+int32_t decrypt(uint8_t rot) {
+    char buffer[17];
+    
+    strcpy(buffer, "Q}|u`sfg~sf{}|a3");
+    int len = strlen(buffer);
+    
+    // XOR each character with rot
+    for (int i = 0; i < len; i++) {
+        buffer[i] ^= rot;  
+    }
+    
+    // Compare with target string
+    if (strncmp(buffer, "Congratulations!", 17) == 0) {
+        system("/bin/sh");   WIN!
+        return 0;
+    } else {
+        puts("\nInvalid Password");
+        return 1;
+    }
+}
+
+int32_t test(uint32_t user_pwd, uint32_t real_pwd) { 
+uint32_t diff = real_pwd - user_pwd; 
+switch (diff) { 
+case 1: 
+case 2: 
+case 3: 
+case 4: 
+case 5: 
+case 6: 
+case 7:
+ case 8: 
+case 9: 
+case 16: // 0x10
+ case 17: // 0x11 
+case 18: // 0x12
+ case 19: // 0x13
+ case 20: // 0x14
+ case 21: // 0x15
+ return decrypt(diff); 
+default: 
+return decrypt(rand());  } }
+
+int main(int argc, char argv) {
+ uint32_t user_pwd;
+ srand(time(NULL)); 
+puts("*********************************"); 
+puts("*\t\tlevel03\t\t**");
+puts("***********************************"); 
+printf("Password:"); 
+scanf("%u", &user_pwd); 
+test(user_pwd, 0x1337d00d); // 322424845 return 0; 
+}

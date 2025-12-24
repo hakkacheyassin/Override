@@ -1,0 +1,109 @@
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+// Function to read unsigned integer from user
+unsigned int get_unum() {
+    unsigned int num;
+    scanf("%u", &num);
+    return num;
+}
+// Store a number at given index
+int store_number(void* data) {
+    printf(" Number: ");
+    unsigned int number = get_unum();
+    
+    printf(" Index: ");
+    unsigned int index = get_unum();
+    
+    // Check if index and number are valid
+    if ((index % 3) != 0 && ((number >> 24) != 0xb7)) {
+        // Store number in array
+        ((unsigned int*)data)[index] = number;
+        return 0;
+    }
+    
+    // Print error if validation fails
+    puts(" *** ERROR! ***");
+    puts("   This index is reserved for wil...");
+    puts(" *** ERROR! ***");
+    return 1;
+}
+// Read a number from given index
+int read_number(void* data) {
+    printf(" Index: ");
+    unsigned int index = get_unum();
+    
+    // Read and print number from array
+    unsigned int value = ((unsigned int*)data)[index];
+    printf(" Number at data[%u] is %u\n", index, value);
+    
+    return 0;
+}
+int main(int argc, char** argv, char** envp) {
+    // Create two buffers
+    char small_buffer[24];
+    char large_buffer[400];
+    
+    // Initialize buffers to zero
+    memset(small_buffer, 0, 24);
+    memset(large_buffer, 0, 400);
+    
+    // Clear all command line arguments
+    for (int i = 0; argv[i] != NULL; i++) {
+        size_t len = strlen(argv[i]);
+        memset(argv[i], 0, len);
+    }
+    
+    // Clear all environment variables
+    for (int i = 0; envp[i] != NULL; i++) {
+        size_t len = strlen(envp[i]);
+        memset(envp[i], 0, len);
+    }
+    
+    // Print separator
+    puts("-----------------------------------------------------------");
+    
+    // Main loop - keep asking for commands
+    while (1) {
+        printf("Input command: ");
+        
+        // Read command from user
+        char command[20];
+        fgets(command, 20, stdin);
+        
+        // Remove newline character at end
+        size_t len = strlen(command);
+        if (len > 0 && command[len - 1] == '\n') {
+            command[len - 1] = '\0';
+        }
+        
+        int status = 1; // 1 means failed
+        
+        // Execute command based on what user typed
+        if (strcmp(command, "store") == 0) {
+            // Store a number
+            status = store_number(large_buffer);
+        }
+        else if (strcmp(command, "read") == 0) {
+            // Read a number
+            read_number(large_buffer);
+            status = 0; // Reading always succeeds
+        }
+        else if (strcmp(command, "quit") == 0) {
+            // Exit program
+            return 0;
+        }
+        
+        // Print success or failure message
+        if (status == 0) {
+            printf(" Completed %s command successfully\n", command);
+        } else {
+            printf(" Failed to do %s command\n", command);
+        }
+        
+        // Clear command buffer
+        memset(command, 0, 20);
+    }
+    
+    return 0;
+}

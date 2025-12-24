@@ -1,0 +1,20 @@
+gdb ./program          # Start GDB
+break main             # Set breakpoint at main
+break *0x08048400      # Set breakpoint at address
+run                    # Run program
+run arg1 arg2          # Run with arguments
+continue (c)           # Continue execution
+next (n)               # Execute next line
+step (s)               # Step into function
+quit (q)               # Exit GDB
+info registers         # Show all registers
+info frame             # Show current stack frame
+x/10x $esp             # Examine 10 words at ESP (hex)
+x/s 0x08048000         # Examine string at address
+x/10i $eip             # Examine 10 instructions at EIP
+disassemble main       # Disassemble main function
+set disassembly-flavor intel  # Use Intel syntax (easier)
+print variable         # Print variable value
+print &variable        # Print variable address
+print (int*)0xffffd000 # Cast and print
+print/x variable       # Print in hex

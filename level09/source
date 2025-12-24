@@ -1,0 +1,68 @@
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <stdint.h>
+int64_t secret_backdoor(void)
+{
+    char buffer[0x80];
+    fgets(buffer, 0x80, stdin);
+    return system(buffer);
+}
+int64_t set_username(int64_t arg1)
+{
+    char buffer[0x8c];
+    int32_t i;
+    
+    memset(buffer, 0, 0x80);
+    
+    puts(">: Enter your username");
+    printf(">>: ");
+    
+    fgets(buffer, 0x80, stdin);
+    
+    for (i = 0; i <= 0x28; i++)
+    {
+        if (buffer[i] == 0)
+            break;
+        
+        (char)(arg1 + i + 0x8c) = buffer[i];
+    }
+    
+    return printf(">: Welcome, %s", (char*)(arg1 + 0x8c));
+}
+char* set_msg(char* arg1)
+{
+    char buffer[0x400];
+    
+    memset(buffer, 0, 0x400);
+    
+    puts(">: Msg @Unix-Dude");
+    printf(">>: ");
+    
+    fgets(buffer, 0x400, stdin);
+    
+    return strncpy(arg1, buffer, (size_t)(*(int32_t*)(arg1 + 0xb4)));
+}
+int64_t handle_msg(void)
+{
+    int64_t s;
+    memset(&s, 0, 0x28);
+    
+    int32_t var_14 = 0x8c;
+    char var_c8[0x8c];
+    
+    set_username((int64_t)var_c8);
+    set_msg(var_c8);
+    
+    return (int64_t)puts(">: Msg sent!");
+}
+int32_t main(int32_t argc, char** argv, char** envp)
+{
+    puts("--------------------------------------------");
+    puts("|   ~Welcome to l33t-m$n ~    v1337        |");
+    puts("--------------------------------------------");
+    
+    handle_msg();
+    
+    return 0;
+}
