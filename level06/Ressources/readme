@@ -12,19 +12,32 @@ if (serial == result) system("/bin/sh");
 
 Solution: GDB Bypass
 
-bashgdb level06
-(gdb) b *0x080487b5    # Before ptrace
-(gdb) b *0x08048866    # After hash loop
+gdb ./level06
+
+# Set breakpoints at the exact addresses
+(gdb) b *0x080487b5    # Before ptrace call
+(gdb) b *0x08048866    # After hash calculation, before comparison
+
 (gdb) r
-Login: bonjour
-Serial: 0
 
-# Bypass ptrace
-(gdb) jump *0x080487ed
+# When prompted:
+-> Enter Login: bonjour
+-> Enter Serial: 0
 
-# Extract hash
-(gdb) p (int)($ebp-0x10)
-$1 = 6239796
+# At first breakpoint (before ptrace at 0x080487b5)
+# Jump past the ptrace check to address 0x080487ed (after the ptrace block)
+(gdb) set $eip=0x080487ed
+(gdb) c
+
+# At second breakpoint (0x08048866 - after hash loop)
+# The calculated hash is stored at ebp-0x10
+(gdb) p/d *(int*)($ebp-0x10)
+
+# You should see something like: $1 = 6232296
+
+# Now quit and use the real serial
+(gdb) q
+
 Execute
 bash./level06
 Login: bonjour

