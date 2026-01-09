@@ -1,5 +1,5 @@
-Override Start : 
-![My Logo](./me)
+Override Basic To Start : 
+
 ┌─────────────────────────────────────────┐
 │ 1. Memory Architecture                  │
 │    └─ Stack, Heap, Segments             │
@@ -10,11 +10,11 @@ Override Start :
 │ 3. Format String Attacks                │
 │    └─ Arbitrary read/write primitives   │
 │                                         │
-│ 4. GOT/PLT Hijacking                    │
+│ 4. GOT/PLT                              │
 │    └─ Dynamic linking exploitation      │
 │                                         │
 │ 5. Modern Security Mechanisms           │
-│    └─ ASLR, DEP, Canaries, RELRO        │
+│    └─ ASLR, NX, Canaries, RELRO         │
 │                                         │
 │                                         │
 │                                         │
@@ -438,7 +438,7 @@ Checksec Analysis
 
 
 ASLR : Randomisation addresses
-NX/DEP : Stack non-exécutable
+NX : Stack non-exécutable
 Stack Canary :  Détecte overflow  Pas de shellcode direct
 PIE :   Addresses imprévisibles
 RELRO: Read-Only GOT , Pas de GOT overwrite

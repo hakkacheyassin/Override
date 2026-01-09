@@ -4,12 +4,12 @@ Analyze the binary
 Compare input against 0x149c (5296 decimal)
 Find the logic
 
-If input == 5296 → Authenticated → Shell access
+If input == 5276 → Authenticated → Shell access
 
 Exploit
 
 bash   ./level00
-   # Enter: 5296
+   # Enter: 5276
 
 Get flag
 

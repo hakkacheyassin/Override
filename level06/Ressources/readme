@@ -33,7 +33,7 @@ gdb ./level06
 # The calculated hash is stored at ebp-0x10
 (gdb) p/d *(int*)($ebp-0x10)
 
-# You should see something like: $1 = 6232296
+# You should see something like: $1 = 6233767
 
 # Now quit and use the real serial
 (gdb) q
@@ -41,7 +41,7 @@ gdb ./level06
 Execute
 bash./level06
 Login: bonjour
-Serial: 6239796
+Serial: 6233767
 cat /home/users/level07/.pass
 Flag
 GbcPDRgsFK77LNnnuh7QyFYA2942Gp8yKj9KrWD8
